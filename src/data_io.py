@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy
+import numpy as np
 import sys
 from datetime import datetime
 from datetime import timedelta
@@ -9,8 +9,14 @@ data = pd.read_csv("https://raw.githubusercontent.com/daenuprobst/covid19-cases-
     
 
 def load_data():
-    data = pd.read_csv("https://raw.githubusercontent.com/daenuprobst/covid19-cases-switzerland/master/covid19_cases_switzerland_openzh.csv")
-    total_case = data.filter(items='CH')
+    temp = pd.read_csv("https://raw.githubusercontent.com/daenuprobst/covid19-cases-switzerland/master/covid19_cases_switzerland_openzh.csv")
+    data = []
+    data.append(temp.filter(items=["CH"]).to_numpy().squeeze()) # total cases
+    temp = pd.read_csv("https://raw.githubusercontent.com/daenuprobst/covid19-cases-switzerland/master/covid19_hospitalized_switzerland_openzh.csv")
+    data.append(temp.filter(items=["CH"]).to_numpy().squeeze()) # hospitalized
+    temp = pd.read_csv("https://raw.githubusercontent.com/daenuprobst/covid19-cases-switzerland/master/covid19_fatalities_switzerland_openzh.csv")
+    data.append(temp.filter(items=["CH"]).to_numpy().squeeze()) # death
+     
 
-    return data
+    return np.asarray(data)
 
