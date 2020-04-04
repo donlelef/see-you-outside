@@ -1,8 +1,5 @@
-% template model usage and how it works with gradually removing
-% interventions from fully lock-down
-clear all;
-close all;
-clc;
+% template code for optimizing intervention removals from fully lock-down
+clear all; close all; clc;
 
 %% define parameters(only consider one group and one region)
 params = struct;
@@ -34,11 +31,21 @@ params.tr = [20,30,40,50];
 params.kappa = [1,3,5,7]; 
 params.k_old = params.k;
 
-% simulation
+% simulated anealing
 x_init = [0.9;0.1;zeros(5,1)];
+sim_end = 100; % end time of simulation
+options = anneal();
+loss_func = @(tr) get_cost(tr,x_init,params,sim_end); % loss function handle
+options.Generator = @(x) center_gen(x,params.tc,size(params.kappa,2),sim_end);   % custom sampler
+options.MaxTries = 200; options.MaxSuccess = 30;
+tr = [24    25    97   101]; % initial guess
+[optimal_tr,optimal_cost] = anneal(loss_func,tr,options);
+
+% simulation for the optimal solution
+params.tr = optimal_tr;
 sim = struct;
 sim.x = x_init;
-for i = 2:100 % 1 is initial state
+for i = 2:sim_end
     sim.x = [sim.x,innovate(sim.x(:,end),params,i)];
 end
 figure(1);clf; hold on
@@ -46,7 +53,7 @@ for i = 1:7
     plot([1:size(sim.x,2)],sim.x(i,:));
 end
 % critical time points
-temp = [params.tc,params.tr]; 
+temp = [params.tc,params.tr(find(params.tr<=100))]; 
 plot(temp,sim.x(:,temp),'*');
 title('prediction')
 legend('s','e','a','i','h','r','d','critical time stamps');
@@ -90,18 +97,13 @@ function P = infect_rate(x,params,i)
    if i<params.tc
        k = params.k;
    else
-       % use > instead of >= to accomodate removing multiple interventions cocurrently
-       index=min(find(params.tr>i)); 
+       index=min(find(params.tr>=i));
        if isempty(index) % full recover remove all interventions
            k = params.k;
        else
            k = params.kappa(index)*(params.sigma-1);
        end
    end
-%    if params.k_old ~=k
-%        fprintf('update k: %2.2f, time: %2.2f\n',k,i);
-%        params.k_old = k;
-%    end
    P = 1-(1-params.beta_a)^(z*k*f(params.n_eff/params.s)*params.C*x_a/params.n_eff)...
             *(1-params.beta_i)^(z*k*f(params.n_eff/params.s)*params.C*x_i/params.n_eff);
 
@@ -109,6 +111,32 @@ end
 
 function CH = get_ch(x,params)
     CH =(x(1)+x(5))^params.sigma;
+end
+
+function loss = get_cost(tr,x_init,params,sim_end)
+    params.tr = tr;
+    x = x_init;
+    for i = 2:sim_end
+        x = innovate(x(:,end),params,i);
+    end
+    % estimate loss
+    num_i = sum(x(end-1:end)); % total infected cases(normalized)
+    num_h = num_i*params.gamma; % number of icu cases
+    num_d = x(end); % number of death
+    t_gap = max((sim_end-tr+1)/sim_end,0); % days without intervention(normalized)
+    % t_gap for economic, num_h for medication cost, num_d to repect life
+    weights = -[0.06,0.08,0.09,0.1]; % benefits weights for removing one more intervention
+    loss = -weights*t_gap'+num_h*0.01+num_d;
+end
+
+function x = center_gen(x,tc,dim,sim_end)
+    % sampling function
+    % Args:
+    %    dim: number of interventions that can be romoved
+    
+    x = x+3*randn(1,dim)+20*(rand(1,dim)-1);
+    % sort to increasing and ensure at least one day of fully lockdown
+    x = min(max(1+tc,ceil(sort(x))),sim_end+1); 
 end
 
 

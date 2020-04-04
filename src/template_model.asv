@@ -38,7 +38,7 @@ params.k_old = params.k;
 x_init = [0.9;0.1;zeros(5,1)];
 sim = struct;
 sim.x = x_init;
-for i = 2:100 % 1 is initial state
+for i = 1:100
     sim.x = [sim.x,innovate(sim.x(:,end),params,i)];
 end
 figure(1);clf; hold on
@@ -46,7 +46,7 @@ for i = 1:7
     plot([1:size(sim.x,2)],sim.x(i,:));
 end
 % critical time points
-temp = [params.tc,params.tr]; 
+temp = [params.tc,params.tr]+1; % index has 1 as initial state
 plot(temp,sim.x(:,temp),'*');
 title('prediction')
 legend('s','e','a','i','h','r','d','critical time stamps');
