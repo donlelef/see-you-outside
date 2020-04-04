@@ -37,8 +37,6 @@ def model_swiss(data, include_prior=True):
         # On the next line, we'll overwrite the value of x with an updated
         # value. If we wanted to record all x values, we could instead
         # write x[t] = pyro.sample(...x[t-1]...).
-        print(x.shape)
-        print(probs_x.shape)
         x = torch.mm(probs_x,x.view(hidden_dim,1))
         with obs_plate:
             pyro.sample("y_{}".format(t), probs_y(x),
@@ -66,9 +64,7 @@ def guide(data):
                                         [0,0,0,1-p_hr-p_hd,p_hr,p_hd],
                                         [0,0,0,0,1,0],
                                         [0,0,0,0,0,1]])).to_event(1))
-    return torch.mm(torch.tensor(np.asarray([[0.,0,1.,1,0,0],
-                                            [0,0,0,1,0,0],
-                                            [0,0,0,0,0,1]],dtype=np.float32)),probs_x.view(6,-1))
+    return probs_x, x
 
 svi = pyro.infer.SVI(model=model_swiss,
                      guide=guide,
