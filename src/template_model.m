@@ -1,5 +1,5 @@
-% in this script I will optimize the end time of intervention given a
-% fixed starting date of intervention
+% template model usage and how it works with gradually removing
+% interventions from fully lock-down
 clear all;
 close all;
 clc;
@@ -22,24 +22,34 @@ params.k = 13.3; % average number of contact
 params.C = 0.721; % contact rate
 params.eps = 0.01; % density factor
 params.sigma = 2.5; % household size
-params.kappa = 1; %confinement factor
 params.n_eff = 10000; % effecitve population
 params.s = 1e4; % area of the region(guess)
 
+params.tc= 10; % starting of intervention fully-lockdown
+% time line of removing different intervention(increasig oder)
+% last one is remove all interventions and kappa = k again
+params.tr = [20,30,40,50]; 
+%confinement factor from the strictest one to the slightest one(modeling average contact)
+% first entry is lock down
+params.kappa = [1,3,5,7]; 
+params.k_old = params.k;
 
+% simulation
 x_init = [0.9;0.1;zeros(5,1)];
 sim = struct;
 sim.x = x_init;
-sim.x_c = x_init;
-params.tc= 10; % starting of intervention
-
-% simulated anealing
-options = anneal();
-loss_func = @(tr) get_cost(tr,x_init,params); % loss function handle
-options.Generator = @(x) center_gen(x,params.tc);   % custom sampler
-options.MaxTries = 200; options.MaxSuccess = 30;
-tr = 40; % initial guess
-[optimal_tr,optimal_cost] = anneal(loss_func,tr,options);
+for i = 1:100
+    sim.x = [sim.x,innovate(sim.x(:,end),params,i)];
+end
+figure(1);clf; hold on
+for i = 1:7
+    plot([1:size(sim.x,2)],sim.x(i,:));
+end
+% critical time points
+temp = [params.tc,params.tr]+1; % index has 1 as initial state
+plot(temp,sim.x(:,temp),'*');
+title('prediction')
+legend('s','e','a','i','h','r','d','critical time stamps');
 
 
 %% help function
@@ -79,11 +89,18 @@ function P = infect_rate(x,params,i)
    x_i = x(4)*params.n_eff;
    if i<params.tc
        k = params.k;
-   elseif i>=params.tr
-       k = params.k;
    else
-       k = params.kappa*(params.sigma-1);
+       index=min(find(params.tr>=i));
+       if isempty(index) % full recover remove all interventions
+           k = params.k;
+       else
+           k = params.kappa(index)*(params.sigma-1);
+       end
    end
+%    if params.k_old ~=k
+%        fprintf('update k: %2.2f, time: %2.2f\n',k,i);
+%        params.k_old = k;
+%    end
    P = 1-(1-params.beta_a)^(z*k*f(params.n_eff/params.s)*params.C*x_a/params.n_eff)...
             *(1-params.beta_i)^(z*k*f(params.n_eff/params.s)*params.C*x_i/params.n_eff);
 
@@ -93,24 +110,4 @@ function CH = get_ch(x,params)
     CH =(x(1)+x(5))^params.sigma;
 end
 
-function loss = get_cost(tr,x_init,params)
-    params.tr = tr;
-    x = x_init;
-    sim_end = 100;
-    for i = 1:sim_end
-        x = innovate(x(:,end),params,i);
-    end
-    % estimate loss
-    num_i = sum(x(end-1:end)); % total infected cases(normalized)
-    num_h = num_i*params.gamma; % number of icu cases
-    num_d = x(end); % number of death
-    t_gap = (sim_end-tr+1)/sim_end; % days without intervention(normalized)
-    % t_gap for economic, num_h for medication cost, num_d to repect life
-    loss = -0.01*t_gap+num_h*0.01+num_d;
-end
 
-function x = center_gen(x,tc)
-    x = x+3*randn(1)+30*(rand(1)-1);
-    x = max(1+tc,ceil(x)); % at least one day after intervention
-end
-    
