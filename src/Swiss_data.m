@@ -70,17 +70,52 @@ for i = 1:7
 end
 axis([17,37,1,1200])
 legend('s','e','a','i','h','r','d');
-title('uncontrolled case')
+title('uncontrolled case in Spain')
 
-data = [cases_CH ; hos_CH ; rel_CH ; fat_CH];
+data = [cases_CH ; hos_CH ; fat_CH];
 
 loss = @(param) 0.5*(data'*simu(x_init,param)).^2;
 
 ac= loss(params2);
 [minimum,fval] = anneal(loss, params2);
 
+params2 = minimum(:,15);
 
-%anneal(loss, data, )
+params.mobility = params2(1); % only one region
+params.eta = params2(2); ... from exposed to asymptomatic
+params.alpha = params2(3); % from asymptomatic to infected
+params.mu = params2(4); % prob leaving infected
+params.gamma = params2(5); % conditional prob to icu
+params.phi = params2(6); % death rate (inverse of time in icu)
+params.w = params2(7); %prob death
+params.xi = params2(8); % prob recover from ICU
+
+% parameters for control
+params.beta_a = params2(9); % infectivity of asymptomatic
+params.beta_i = params2(10); % infectivity of infected
+params.k = params2(11); % average number of contact
+params.C = params2(12); % contact rate
+params.eps = params2(13); % density factor
+params.sigma = params2(14); % household size
+params.kappa = params2(15); %confinement factor
+
+sim = struct;
+sim.x = x_init;
+
+params.tc= 101; % starting of intervention(not intervented in this case)
+for i = 1:100
+    sim.x = [sim.x,innovate(sim.x(:,end),params,i)];
+end
+
+figure(4);clf; hold on
+for i = 1:7
+    plot([1:size(sim.x,2)],sim.x(i,:)*8.57e6);
+end
+axis([17,37,1,1200])
+legend('s','e','a','i','h','r','d');
+title('uncontrolled case Switzerland ?')
+
+
 
 %% Innovate funciton
 function x_out = simu(x_init,params2)
@@ -105,14 +140,14 @@ function x_out = simu(x_init,params2)
     params.eps = params2(13); % density factor
     params.sigma = params2(14); % household size
     params.kappa = params2(15); %confinement factor
-    params.n_eff = 10000; % effecitve population
-    params.s = 1e4; % area of the region(guess)
+    params.n_eff = 8.57e6; % effecitve population
+    params.s = 8.57e6; % area of the region(guess)
 
     params.tc= 101; % starting of intervention(not intervented in this case)
     for i = 1:100
         sim.x = [sim.x,innovate(sim.x(:,end),params,i)];
     end    
-    x_out = [sim.x(4,18:35)' ; sim.x(5,18:35)' ; sim.x(6,18:35)' ; sim.x(7,18:35)'];
+    x_out = [sim.x(4,18:35)' ; sim.x(5,18:35)' ; sim.x(7,18:35)'];
     
 end
 
