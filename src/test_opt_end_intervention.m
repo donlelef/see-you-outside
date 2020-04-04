@@ -1,4 +1,5 @@
-% this script test the validity of the spanish model with the given params
+% in this script I will optimize the end time of intervention given a
+% fixed starting date of intervention
 clear all;
 close all;
 clc;
@@ -30,28 +31,16 @@ x_init = [0.9;0.1;zeros(5,1)];
 sim = struct;
 sim.x = x_init;
 sim.x_c = x_init;
-% not control
-params.tc= 101; % intervention time of control
-for i = 1:100
-    sim.x = [sim.x,innovate(sim.x(:,end),params,i)];
-end
-% control
-params.tc = 12; % intervention time of control
-for i = 1:100
-    sim.x_c = [sim.x_c,innovate(sim.x_c(:,end),params,i)];
-end
-figure(1);clf; hold on
-for i = 1:7
-    plot([1:size(sim.x,2)],sim.x(i,:));
-end
-legend('s','e','a','i','h','r','d');
-title('uncontrolled case')
-figure(2);clf; hold on
-for i = 1:7
-    plot([1:size(sim.x_c,2)],sim.x_c(i,:));
-end
-title('controlled case')
-legend('s','e','a','i','h','r','d');
+params.tc= 10; % starting of intervention
+
+% simulated anealing
+options = anneal();
+loss_func = @(tr) get_cost(tr,x_init,params); % loss function handle
+options.Generator = @(x) center_gen(x,params.tc);   % custom sampler
+options.MaxTries = 200; options.MaxSuccess = 30;
+tr = 40; % initial guess
+[optimal_tr,optimal_cost] = anneal(loss_func,tr,options);
+
 
 %% help function
 function x_next = innovate(x,params,i)
@@ -91,7 +80,7 @@ function P = infect_rate(x,params,i)
    if i<params.tc
        k = params.k;
    elseif i>=params.tr
-       k = prames.k;
+       k = params.k;
    else
        k = params.kappa*(params.sigma-1);
    end
@@ -104,5 +93,24 @@ function CH = get_ch(x,params)
     CH =(x(1)+x(5))^params.sigma;
 end
 
+function loss = get_cost(tr,x_init,params)
+    params.tr = tr;
+    x = x_init;
+    sim_end = 100;
+    for i = 1:sim_end
+        x = innovate(x(:,end),params,i);
+    end
+    % estimate loss
+    num_i = sum(x(end-1:end)); % total infected cases(normalized)
+    num_h = num_i*params.gamma; % number of icu cases
+    num_d = x(end); % number of death
+    t_gap = (sim_end-tr+1)/sim_end; % days without intervention(normalized)
+    % t_gap for economic, num_h for medication cost, num_d to repect life
+    loss = -0.01*t_gap+num_h*0.01+num_d;
+end
 
-
+function x = center_gen(x,tc)
+    x = x+3*randn(1)+30*(rand(1)-1);
+    x = max(1+tc,ceil(x)); % at least one day after intervention
+end
+    

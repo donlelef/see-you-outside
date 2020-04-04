@@ -31,12 +31,12 @@ sim = struct;
 sim.x = x_init;
 sim.x_c = x_init;
 % not control
-params.tc= 101; % intervention time of control
+params.tc= 101; % starting of intervention(not intervented in this case)
 for i = 1:100
     sim.x = [sim.x,innovate(sim.x(:,end),params,i)];
 end
 % control
-params.tc = 12; % intervention time of control
+params.tc = 12; % starting of intervention
 for i = 1:100
     sim.x_c = [sim.x_c,innovate(sim.x_c(:,end),params,i)];
 end
