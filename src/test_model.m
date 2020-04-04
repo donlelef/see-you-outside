@@ -39,7 +39,7 @@ legend('s','e','a','i','h','r','d');
 %% help function
 function x_next = innovate(x,params)
     % evolve one step
-    Gamma = infect_rate(x,params)
+    Gamma = infect_rate(x,params);
             % s, e, a, i, h, r, d
     trans = [1-Gamma, 0, 0, 0, 0, 0, 0;
             Gamma, 1-params.eta, 0, 0, 0, 0, 0;
