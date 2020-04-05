@@ -90,7 +90,7 @@ for i in range(T):
     opti.subject_to(x[5,i]<=0.01)
 opti.subject_to(x[:,0]==x_init)
 
-opti.minimize(loss[-1])
+opti.minimize(loss[-1]+20*x[6,30])
 p_opts = {"expand":True}
 s_opts = {"max_iter": 1e4}
 opti.solver('ipopt',p_opts,s_opts)
