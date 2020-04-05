@@ -36,7 +36,7 @@ def infect_rate(x, params, t):
     
     
 def get_ch(x, params):
-    return x[0]+x[1]+x[2] # np.power(x[0]+x[7],params['sigma'])
+    return np.power(x[0]+x[6],params['sigma'])
 
 
 def innovate(x, params, t):
@@ -53,6 +53,7 @@ def innovate(x, params, t):
                           [0, 0, 0, 0, params['w']*params['phi'], 1, 0, 0],
                           [0, 0, 0, params['mu']*(1-params['gamma']), (1-params['w'])*params['xi'], 0, 1, 0],
                           [CH, 0, 0, 0, 0, 0, 0, 0]])
+        print(np.dot(trans,x.reshape(-1,1)).sum())
         return np.dot(trans,x.reshape(-1,1)), params
                           
     elif t in params['tr']:
@@ -68,6 +69,7 @@ def innovate(x, params, t):
                           [0, 0, 0, 0, params['w']*params['phi'], 1, 0, 0],
                           [0, 0, 0, params['mu']*(1-params['gamma']), (1-params['w'])*params['xi'], 0, 1, 0],
                           [0 , 0, 0, 0, 0, 0, 0, 0]])
+        print((np.dot(trans,x.reshape(-1,1)) + np.array([ch-CH, 0, 0, 0, 0, 0, 0, CH]).reshape(-1,1)).sum())
         return np.dot(trans,x.reshape(-1,1)) + np.array([ch-CH, 0, 0, 0, 0, 0, 0, CH]).reshape(-1,1), params
                           
     else:
