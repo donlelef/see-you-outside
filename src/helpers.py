@@ -88,7 +88,8 @@ def simulate(x_init, params):
     for t in range(2, params['t_max']+1):
        x[t], params = innovate(x[t-1].values, params, t)
        #print(x.loc['D',t])
-    print(np.max(x.values, axis=1))
+    print("Max deaths: {:.2f}%".format(100*np.max(x.loc['D'].values)))
+    print("Max hospitalizaitons: {:.2f}%".format(100*np.max(x.loc['H'].values)))
     graph(x, params)
     
 
