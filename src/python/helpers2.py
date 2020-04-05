@@ -3,6 +3,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.optimize import basinhopping
+import time
 
 states = ['S', 'E', 'A', 'I', 'H', 'D', 'R', 'C']
 
@@ -12,12 +14,11 @@ def f(x, params):
 
 
 def infect_rate(x, params, t):
-    z = 1/(f(params['n_eff']/params['s'], params))
     x_a = x[2]
     x_i = x[3]
-    kappa0 = 1
+    kappa0 = 0
     
-    if t < params['tc']:
+    if t < params['tr'][0]:
         k = params['k']
     else:
         indices = np.where(np.array(params['tr']) > t)[0]
@@ -36,14 +37,15 @@ def infect_rate(x, params, t):
     
     
 def get_ch(x, params):
-    return np.power(x[0]+x[6],params['sigma'])
+    return np.power(x[0]+x[7],params['sigma'])
 
 
 def innovate(x, params, t):
     # evolve one step
     Gamma, kappa0 = infect_rate(x, params, t)
-    if t == params['tc']:
+    if t == params['tr'][0]:
         CH = kappa0 * get_ch(x, params)
+        print(CH)
         # s e a i h d r
         trans = np.array([[(1-CH)*(1-Gamma), 0, 0, 0, 0, 0, 0, 0],
                           [(1-CH)*Gamma, 1-params['eta'], 0, 0, 0, 0, 0, 0],
@@ -53,8 +55,7 @@ def innovate(x, params, t):
                           [0, 0, 0, 0, params['w']*params['phi'], 1, 0, 0],
                           [0, 0, 0, params['mu']*(1-params['gamma']), (1-params['w'])*params['xi'], 0, 1, 0],
                           [CH, 0, 0, 0, 0, 0, 0, 0]])
-        print(np.dot(trans,x.reshape(-1,1)).sum())
-        return np.dot(trans,x.reshape(-1,1)), params
+        return np.dot(trans,x.reshape(-1,1))
                           
     elif t in params['tr']:
         CH = kappa0 * get_ch(x, params)
@@ -69,8 +70,7 @@ def innovate(x, params, t):
                           [0, 0, 0, 0, params['w']*params['phi'], 1, 0, 0],
                           [0, 0, 0, params['mu']*(1-params['gamma']), (1-params['w'])*params['xi'], 0, 1, 0],
                           [0 , 0, 0, 0, 0, 0, 0, 0]])
-    
-        return np.dot(trans,x.reshape(-1,1)) + np.array([ch-CH, 0, 0, 0, 0, 0, 0, CH]).reshape(-1,1), params
+        return np.dot(trans,x.reshape(-1,1)) + np.array([ch-CH, 0, 0, 0, 0, 0, 0, CH]).reshape(-1,1)
                           
     else:
         trans = np.array([[(1-Gamma), 0, 0, 0, 0, 0, 0, 0],
@@ -81,25 +81,29 @@ def innovate(x, params, t):
                          [0, 0, 0, 0, params['w']*params['phi'], 1, 0, 0],
                          [0, 0, 0, params['mu']*(1-params['gamma']), (1-params['w'])*params['xi'], 0, 1, 0],
                          [0, 0, 0, 0, 0, 0, 0, 1]])
-        return np.dot(trans,x.reshape(-1,1)), params
+        return np.dot(trans,x.reshape(-1,1))
     
-def simulate(x_init, params):
+    
+def simulate(params, save=False, name=None):
     x = pd.DataFrame(index=states)
-    x[1] = np.array(x_init)
+    x[1] = params['x_init']
 
     for t in range(2, params['t_max']+1):
-       x[t], params = innovate(x[t-1].values, params, t)
-       #print(x.loc['D',t])
-    print("Max deaths: {:.2f}%".format(100*np.max(x.loc['D'].values)))
-    print("Max hospitalizaitons: {:.2f}%".format(100*np.max(x.loc['H'].values)))
-    graph(x, params)
+        x[t] = innovate(x[t-1].values, params, t)
+       
+    if name != None:
+        print("Max deaths {}: {:.2f}%".format(name, 100*np.max(x.loc['D'].values)))
+        print("Max hospitalizations: {:.2f}%".format(100*np.max(x.loc['H'].values)))
+    else:
+        print("Max deaths {}: {:.2f}%".format(name, 100*np.max(x.loc['D'].values)))
+        print("Max hospitalizations: {:.2f}%".format(100*np.max(x.loc['H'].values)))
+    graph(x, params, save, name)
     
 
-def graph(x, params):
+def graph(x, params, save=False, name=None):
     plt.subplot(2,1,1)
     for state in states:
         plt.plot(x.loc[state,:], label=state)
-    plt.plot([params['tc'], params['tc']], [0, 1], color='black')
     for tr in params['tr']:
         plt.plot([tr, tr], [0, 1], color='black')
     plt.legend()
@@ -109,9 +113,62 @@ def graph(x, params):
     plt.plot(x.loc[['S', 'C'],:].sum(axis=0), label='S')
     plt.plot(x.loc[['E','A','I','H'],:].sum(axis=0), label='I')
     plt.plot(x.loc[['R','D'],:].sum(axis=0), label='R')
-    plt.plot([params['tc'], params['tc']], [0, 1], color='black')
     for tr in params['tr']:
         plt.plot([tr, tr], [0, 1], color='black')
     plt.legend()
     plt.title('SIR adaptation')
+    if save:
+        plt.savefig(name+'.png')
     plt.show()
+    
+    plt.subplot(2,1,2)
+    plt.plot(x.loc[['I'],:].sum(axis=0), label='I')
+    plt.plot(x.loc[['H'],:].sum(axis=0), label='H')
+    plt.plot(x.loc[['D'],:].sum(axis=0), label='D')
+    for tr in params['tr']:
+        plt.plot([tr, tr], [0, 1], color='black')
+    plt.legend()
+    plt.title('SIR adaptation')
+    if save:
+        plt.savefig(name+'.png')
+    plt.show()
+    
+
+def get_costcd(tr, params):
+    x = pd.DataFrame(index=states)
+    x[1] = params['x_init']
+    tr.sort()
+    params['tr'] = np.array([int(tr[i]) if i%2==0 else int(tr[i])+1 for i in range(len(tr))]).clip(1,params['t_max']-1)
+
+    for t in range(2, params['t_max']+1):
+       x[t] = innovate(x[t-1].values, params, t)
+
+    num_i = x.loc[['D','R'],params['t_max']].sum() # total infected cases(normalized)
+    num_h = num_i*params['gamma'] # number of icu cases
+    num_d = x.loc['D',params['t_max']] # number of death
+    
+    tr = list(tr)
+    tr.append(params['t_max'])
+    gaps = [tr[i+1]-tr[i] for i in range(len(tr)-1)]
+    # total days of lockdown
+    lockdowns = np.array([gaps[i] if i%2==0 else 0 for i in range(len(gaps))]).sum()
+
+    #t_gap = np.max(gaps) # days without intervention(normalized)
+    # t_gap for economic, num_h for medication cost, num_d to repect life
+
+    return -np.dot(params['weights'], np.array([num_i, num_h, num_d, lockdowns]))
+    
+
+def optimize(params):
+    params_org = params.copy()
+    
+    tic = time.time()
+    tr_opt = basinhopping(get_cost, x0=params['tr'], minimizer_kwargs={'args':params, 'method':'Nelder-Mead'}, stepsize=10, niter=10)
+    tr_opt = tr_opt.x
+    print(time.time()-tic)
+    
+    params['tr'] = tr_opt.clip(1,params['t_max']-1)
+    
+    simulate(params_org, save=True, name='Original')
+    print(tr_opt)
+    simulate(params, save=True, name='Optimized')

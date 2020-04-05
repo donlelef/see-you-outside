@@ -1,6 +1,5 @@
-from helpers import *
+from helpers2 import *
 import argparse
-import copy
 
 # define parameters(only consider one group and one region)
 params = {}
@@ -27,47 +26,38 @@ params['s'] = 0.0001 # area of the region(guess)
 # parameters for control
 params['t_max'] = 100
 # starting of intervention fully-lockdown
-params['tc'] = 15
+# params['tc'] = 20
 # time line of removing different intervention(increasig oder)
 # last one is remove all interventions and kappa = k again
-params['tr'] = [30, 60]
+params['tr'] = np.array([34,45,56,67])
 # confinement factor from the strictest one to the slightest one(modeling average contact)
 # first entry is lock down
-params['kappa'] = [300000, 3/2, 100000, 3/2, 100000]
+params['kappa'] = [3/2, 100000, 3/2, 100000]
 params['kappa0'] = 2/3
 params['k_old'] = params['k']
 
-def simulate(params = params, x_init = [0.99, 0.01, 0, 0, 0, 0, 0, 0]):
-   params_sim = copy.deepcopy(params)
-   x = pd.DataFrame(index=states)
-   x[1] = x_init
+params['x_init'] = [0.99, 0.01, 0, 0, 0, 0, 0, 0]
 
-   for t in range(2, params_sim['t_max']+1):
-      x[t], params_sim = innovate(x[t-1].values, params_sim, t)
-   return x
-
+params['weights'] = -1*np.array([0.5, 2, 7, 0.003])
+    
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-x', '--x_init', type=float, nargs='+', default=[0.9, 0.1, 0, 0, 0, 0, 0])
-    parser.add_argument('-tc', '--tc', type=int, default=15)
-    parser.add_argument('-tr', '--tr', type=float, nargs='+', default=[25, 40, 55, 70])
-    parser.add_argument('-kappa', '--kappa', type=float, nargs='+', default=[1, 3, 5, 7])
+    parser.add_argument('-x', '--x_init', type=float, nargs='+', default=params['x_init'])
+    parser.add_argument('-tr', '--tr', type=float, nargs='+', default=params['tr'])
+    parser.add_argument('-kappa', '--kappa', type=float, nargs='+', default=params['kappa'])
+    parser.add_argument('-tm', '--t_max', type=int, default=params['t_max'])
     args = parser.parse_args()
-    
-    params['tc'] = args.tc # starting of intervention fully-lockdown
+
+    params['t_max'] = args.t_max
     # time line of removing different intervention(increasig oder)
     # last one is remove all interventions and kappa = k again
     params['tr'] = args.tr
+    params['tr'].sort()
     # confinement factor from the strictest one to the slightest one(modeling average contact)
     # first entry is lock down
-    params['kappa'] = [1,3,5,7]
-    
-    x_init = np.array(args.x_init)
-   #  print(x_init)
-    x = pd.DataFrame(index=states)
-    x[1] = x_init
+    params['kappa'] = args.kappa
 
-    for t in range(2, params['t_max']+1):
-       x[t] = innovate(x[t-1].values, params, t)
-       
-    graph(x, params)
+    params['x_init'] = np.array(args.x_init)
+    
+    simulate(params)
