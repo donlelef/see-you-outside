@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
 
 states = ['S', 'E', 'A', 'I', 'H', 'D', 'R', 'C']
 
@@ -42,6 +43,8 @@ def get_ch(x, params):
 def innovate(x, params, t):
     # evolve one step
     Gamma, kappa0 = infect_rate(x, params, t)
+    # print(t)
+    # print(params['tr'])
     if t == params['tc']:
         CH = kappa0 * get_ch(x, params)
         # s e a i h d r
@@ -53,7 +56,7 @@ def innovate(x, params, t):
                           [0, 0, 0, 0, params['w']*params['phi'], 1, 0, 0],
                           [0, 0, 0, params['mu']*(1-params['gamma']), (1-params['w'])*params['xi'], 0, 1, 0],
                           [CH, 0, 0, 0, 0, 0, 0, 0]])
-        print(np.dot(trans,x.reshape(-1,1)).sum())
+        #print(np.dot(trans,x.reshape(-1,1)).sum())
         return np.dot(trans,x.reshape(-1,1)), params
                           
     elif t in params['tr']:
@@ -69,7 +72,7 @@ def innovate(x, params, t):
                           [0, 0, 0, 0, params['w']*params['phi'], 1, 0, 0],
                           [0, 0, 0, params['mu']*(1-params['gamma']), (1-params['w'])*params['xi'], 0, 1, 0],
                           [0 , 0, 0, 0, 0, 0, 0, 0]])
-        print((np.dot(trans,x.reshape(-1,1)) + np.array([ch-CH, 0, 0, 0, 0, 0, 0, CH]).reshape(-1,1)).sum())
+        #print((np.dot(trans,x.reshape(-1,1)) + np.array([ch-CH, 0, 0, 0, 0, 0, 0, CH]).reshape(-1,1)).sum())
         return np.dot(trans,x.reshape(-1,1)) + np.array([ch-CH, 0, 0, 0, 0, 0, 0, CH]).reshape(-1,1), params
                           
     else:
@@ -93,7 +96,10 @@ def simulate(x_init, params):
     print("Max deaths: {:.2f}%".format(100*np.max(x.loc['D'].values)))
     print("Max hospitalizaitons: {:.2f}%".format(100*np.max(x.loc['H'].values)))
     graph(x, params)
-    
+
+def int_to_date(int, start):
+    return start + int*timedelta(days=1)
+
 
 def graph(x, params):
     plt.subplot(2,1,1)

@@ -1,4 +1,5 @@
 ''' Here all data generation takes place'''
+import copy
 import os
 from datetime import datetime
 
@@ -53,12 +54,33 @@ def test_plot():
                              name=col))
 
 
-def return_plot():
+# def return_plot():
+#     ''' return plot from model'''
+#     # df = load_data()
+
+#     #GEt trajectories
+#     x = template_model.simulate()
+
+#     # prepare date_range
+#     time_start = config.date_start_simulations
+#     date_range = pd.date_range(time_start, periods = x.shape[1], freq = 'D')
+#     fig = go.Figure()
+#     for name, traj in x.iterrows():
+#         fig.add_trace(go.Bar(x=date_range, y=traj,
+#                             name=name))
+#     fig.update_layout(barmode='stack',
+#                     #   autosize= False,
+#                     #   height=500,
+#                       )
+#     return fig
+
+def return_plot_from_dates(dates):
     ''' return plot from model'''
     # df = load_data()
-
+    params = copy.deepcopy(template_model.params)
+    params['tr'] = dates
     # GEt trajectories
-    x = template_model.simulate()
+    x = template_model.simulate(params)
 
     # prepare date_range
     time_start = config.date_start_simulations
@@ -81,7 +103,3 @@ def get_scenario_plot(scenario_file='no_lockdown.csv'):
 
     return fig
 
-
-if __name__ == "__main__":
-    fig = return_plot()
-    fig.show()

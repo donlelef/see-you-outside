@@ -1,14 +1,18 @@
 # Import required libraries
-import math
-import pathlib
+import pickle
 from datetime import datetime
-
+import copy
+import pathlib
 import dash
+import math
+import datetime as dt
+import pandas as pd
+from dash.dependencies import Input, Output, State, ClientsideFunction
 import dash_core_components as dcc
 import dash_html_components as html
-import pandas as pd
-from dash.dependencies import Input, Output, ClientsideFunction
 
+# Multi-dropdown options
+# from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
 import config
 import generate_data
 
@@ -90,7 +94,7 @@ app.layout = html.Div(
                             id='date-slider_0',
                             updatemode='mouseup',
                             step=1,
-                            value=0,
+                            value=20,
                             min=0,
                             max=100,
                             marks=get_slider_marks(config.date_start_interventions, config.date_stop_interventions,
@@ -120,7 +124,7 @@ app.layout = html.Div(
                             id='date-slider_2',
                             updatemode='mouseup',
                             step=1,
-                            value=0,
+                            value=20,
                             min=0,
                             max=100,
                             marks=get_slider_marks(config.date_start_interventions, config.date_stop_interventions,
@@ -135,7 +139,7 @@ app.layout = html.Div(
                             id='date-slider_3',
                             updatemode='mouseup',
                             step=1,
-                            value=0,
+                            value=20,
                             min=0,
                             max=100,
                             marks=get_slider_marks(config.date_start_interventions, config.date_stop_interventions,
@@ -171,7 +175,7 @@ app.layout = html.Div(
                     [
                         dcc.Graph(
                             id="count_graph",
-                            figure=generate_data.return_plot(),
+                            figure=generate_data.return_plot_from_dates([20, 20, 20, 20]),
                             responsive=True,
                             config=default_config
                         )
@@ -226,22 +230,28 @@ def generate_scenario_plot_on_scenario_change(chosen_scenario):
     return generate_data.get_scenario_plot(chosen_scenario)
 
 
-# Helper functions
-def human_format(num):
-    if num == 0:
-        return "0"
-
-    magnitude = int(math.log(num, 1000))
-    mantissa = str(int(num / (1000 ** magnitude)))
-    return mantissa + ["", "K", "M", "G", "T", "P"][magnitude]
-
-
 # Create callbacks
 app.clientside_callback(
     ClientsideFunction(namespace="clientside", function_name="resize"),
     Output("output-clientside", "children"),
     [Input("count_graph", "figure")],
 )
+
+
+@app.callback(
+    Output("count_graph", "figure"),
+    [Input("date-slider_0", "value"),
+     Input("date-slider_1", "value"),
+     Input("date-slider_2", "value"),
+     Input("date-slider_3", "value")])
+def update_output(date_0, date_1, date_2, date_3):
+    dates = [date_0, date_1, date_2, date_3]
+    # print('Dates: {}'.format(dates))
+    dates.sort()
+    # print('DAtes: {}'.format(dates))
+    fig = generate_data.return_plot_from_dates(dates)
+    return fig
+
 
 # Main
 if __name__ == "__main__":
