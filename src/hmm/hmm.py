@@ -187,10 +187,10 @@ class HMM(torch.nn.Module):
         return torch.cat((torch.mm(trans,x[0:-1].view(-1,1)).view(-1,1),(t+1).view(-1,1)),dim=0)
 
 data = data_io.load_data().transpose()
-data = data[10:,1:]
+data = data[:,1:]
 
 model = HMM()
-model.tc = model.tc-10 # we leave 10 days unused
+model.tc = model.tc # we leave 10 days unused
 optimizer = optim.Adam(model.parameters(),lr= 1e-3)
 criterion = torch.nn.MSELoss()
 scale = torch.tensor([[1e3],[1e6]]).float()
