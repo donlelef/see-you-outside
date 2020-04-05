@@ -23,15 +23,26 @@ def calculate_trans(x, params,k, t):
     trans = cs.MX.zeros(7,7)
     trans[0,0] = (1-Gamma)
     trans[1,0] = Gamma
-    trans[1,1] = 
+    trans[1,1] = 1-params['eta']
+    trans[2,1] = params['eta']
+    trans[2,2] = 1-params['alpha']
+    trans[3,2] = params['alpha']
+    trans[3,3] = 1-params['mu']
+    trans[4,3] = params['mu']*params['gamma']
+    trans[4,4] = params['w']*(1-params['phi']) + (1-params['w'])*(1-params['xi'])
+    trans[5,4] = params['w']*params['phi']
+    trans[5,5] = 1
+    trans[6,3] = params['mu']*(1-params['gamma'])
+    trans[6,4] = (1-params['w'])*params['xi']
+    trans[6,6] = 1
     
-    trans = [[(1-Gamma), 0, 0, 0, 0, 0, 0, 0],
-                    [Gamma, 1-params['eta'], 0, 0, 0, 0, 0, 0],
-                    [0, params['eta'], 1-params['alpha'], 0, 0, 0, 0, 0],
-                    [0, 0, params['alpha'], 1-params['mu'], 0, 0, 0, 0],
-                    [0, 0, 0, params['mu']*params['gamma'], params['w']*(1-params['phi']) + (1-params['w'])*(1-params['xi']), 0, 0, 0],
-                    [0, 0, 0, 0, params['w']*params['phi'], 1, 0],
-                    [0, 0, 0, params['mu']*(1-params['gamma']), (1-params['w'])*params['xi'], 0, 1]]
+    # trans = [[(1-Gamma), 0, 0, 0, 0, 0, 0],
+    #                 [Gamma, 1-params['eta'], 0, 0, 0, 0, 0],
+    #                 [0, params['eta'], 1-params['alpha'], 0, 0, 0, 0 ],
+    #                 [0, 0, params['alpha'], 1-params['mu'], 0, 0, 0 ],
+    #                 [0, 0, 0, params['mu']*params['gamma'], params['w']*(1-params['phi']) + (1-params['w'])*(1-params['xi']), 0, 0],
+    #                 [0, 0, 0, 0, params['w']*params['phi'], 1, 0],
+    #                 [0, 0, 0, params['mu']*(1-params['gamma']), (1-params['w'])*params['xi'], 0, 1]]
     return trans
 
 
@@ -58,10 +69,10 @@ params['s'] = 0.0001 # area of the region(guess)
 opti = cs.Opti()
 
 T = 100 # horizon
-x = opti.variable(6,T+1)
+x = opti.variable(7,T+1)
 k = opti.variable(1,T)
 loss = opti.variable(1,T+1)
-x_init = opti.parameter(6,1)
+x_init = opti.parameter(7,1)
 num_habitant = 8570000
 
 # boundery condition
@@ -75,16 +86,26 @@ for i in range(T):
 
     # control constraints
     opti.subject_to(k[i]<=params['k'])
-    opti.subject_to(kappa[i]>=1)
-    opti.subject_to(x[5,i]<=8000/num_habitant)
+    opti.subject_to(k[i]>=1)
+    opti.subject_to(x[5,i]<=0.01)
 opti.subject_to(x[:,0]==x_init)
 
 opti.minimize(loss[-1])
 p_opts = {"expand":True}
-s_opts = {"max_iter": 100}
+s_opts = {"max_iter": 1e4}
 opti.solver('ipopt',p_opts,s_opts)
 
-sol.set_value(x_init,[[0.5],[0.1],[0.2],[0.195],[0.005],[0.0],[0.0]])
+
+# initial state
+temp = cs.DM(7,1)
+temp[0] = 0.9
+temp[1] = 0.1
+temp[2] = 0.0
+temp[3] = 0.0
+temp[4] = 0.0
+temp[5] = 0.0
+temp[6] = 0.0
+opti.set_value(x_init,temp)
 
 opti.solve()
 
