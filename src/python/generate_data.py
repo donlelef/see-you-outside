@@ -100,5 +100,5 @@ def return_plot_from_dates(dates):
     fig.show()
 
 if __name__ == "__main__":
-    fig = return_plot()
+    fig = return_plot_from_dates([20, 30, 40, 50])
     fig.show()

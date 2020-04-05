@@ -27,7 +27,7 @@ params['s'] = 0.0001 # area of the region(guess)
 # parameters for control
 params['t_max'] = 100
 # starting of intervention fully-lockdown
-params['tc'] = 20
+params['tc'] = 15
 # time line of removing different intervention(increasig oder)
 # last one is remove all interventions and kappa = k again
 params['tr'] = [30, 60]
