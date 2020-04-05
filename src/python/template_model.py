@@ -63,7 +63,7 @@ if __name__ == "__main__":
     params['kappa'] = [1,3,5,7]
     
     x_init = np.array(args.x_init)
-    print(x_init)
+   #  print(x_init)
     x = pd.DataFrame(index=states)
     x[1] = x_init
 
