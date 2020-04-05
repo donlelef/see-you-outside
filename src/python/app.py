@@ -138,7 +138,7 @@ app.layout = html.Div(
                         id='date-slider_0',
                         updatemode='mouseup',
                         step=1,
-                        value=0,
+                        value=20,
                         min = 0,
                         max = 100,
                         marks=get_slider_marks(config.date_start_interventions, config.date_stop_interventions, freq=14),
@@ -152,7 +152,7 @@ app.layout = html.Div(
                         id='date-slider_1',
                         updatemode='mouseup',
                         step=1,
-                        value=0,
+                        value=20,
                         min = 0,
                         max = 100,
                         marks=get_slider_marks(config.date_start_interventions, config.date_stop_interventions, freq=14),
@@ -166,7 +166,7 @@ app.layout = html.Div(
                         id='date-slider_2',
                         updatemode='mouseup',
                         step=1,
-                        value=0,
+                        value=20,
                         min = 0,
                         max = 100,
                         marks=get_slider_marks(config.date_start_interventions, config.date_stop_interventions, freq=14),
@@ -180,7 +180,7 @@ app.layout = html.Div(
                         id='date-slider_3',
                         updatemode='mouseup',
                         step=1,
-                        value=0,
+                        value=20,
                         min = 0,
                         max = 100,
                         marks=get_slider_marks(config.date_start_interventions, config.date_stop_interventions, freq=14),
@@ -214,7 +214,7 @@ app.layout = html.Div(
                 html.Div(
                     [
                         dcc.Graph(id="count_graph",
-                                    figure = generate_data.return_plot(),
+                                    figure = generate_data.return_plot_from_dates([20,20,20,20]),
                                     style={'height': 500})
                     ],   ##TODO insert graph
                     id="countGraphContainer",
@@ -230,94 +230,108 @@ app.layout = html.Div(
 
 
 
-# Helper functions
-def human_format(num):
-    if num == 0:
-        return "0"
+# # Helper functions
+# def human_format(num):
+#     if num == 0:
+#         return "0"
 
-    magnitude = int(math.log(num, 1000))
-    mantissa = str(int(num / (1000 ** magnitude)))
-    return mantissa + ["", "K", "M", "G", "T", "P"][magnitude]
-
-
-def filter_dataframe(df, well_statuses, well_types, year_slider):
-    dff = df[
-        df["Well_Status"].isin(well_statuses)
-        & df["Well_Type"].isin(well_types)
-        & (df["Date_Well_Completed"] > dt.datetime(year_slider[0], 1, 1))
-        & (df["Date_Well_Completed"] < dt.datetime(year_slider[1], 1, 1))
-    ]
-    return dff
+#     magnitude = int(math.log(num, 1000))
+#     mantissa = str(int(num / (1000 ** magnitude)))
+#     return mantissa + ["", "K", "M", "G", "T", "P"][magnitude]
 
 
-def produce_individual(api_well_num):
-    try:
-        points[api_well_num]
-    except:
-        return None, None, None, None
-
-    index = list(
-        range(min(points[api_well_num].keys()), max(points[api_well_num].keys()) + 1)
-    )
-    gas = []
-    oil = []
-    water = []
-
-    for year in index:
-        try:
-            gas.append(points[api_well_num][year]["Gas Produced, MCF"])
-        except:
-            gas.append(0)
-        try:
-            oil.append(points[api_well_num][year]["Oil Produced, bbl"])
-        except:
-            oil.append(0)
-        try:
-            water.append(points[api_well_num][year]["Water Produced, bbl"])
-        except:
-            water.append(0)
-
-    return index, gas, oil, water
+# def filter_dataframe(df, well_statuses, well_types, year_slider):
+#     dff = df[
+#         df["Well_Status"].isin(well_statuses)
+#         & df["Well_Type"].isin(well_types)
+#         & (df["Date_Well_Completed"] > dt.datetime(year_slider[0], 1, 1))
+#         & (df["Date_Well_Completed"] < dt.datetime(year_slider[1], 1, 1))
+#     ]
+#     return dff
 
 
-def produce_aggregate(selected, year_slider):
+# def produce_individual(api_well_num):
+#     try:
+#         points[api_well_num]
+#     except:
+#         return None, None, None, None
 
-    index = list(range(max(year_slider[0], 1985), 2016))
-    gas = []
-    oil = []
-    water = []
+#     index = list(
+#         range(min(points[api_well_num].keys()), max(points[api_well_num].keys()) + 1)
+#     )
+#     gas = []
+#     oil = []
+#     water = []
 
-    for year in index:
-        count_gas = 0
-        count_oil = 0
-        count_water = 0
-        for api_well_num in selected:
-            try:
-                count_gas += points[api_well_num][year]["Gas Produced, MCF"]
-            except:
-                pass
-            try:
-                count_oil += points[api_well_num][year]["Oil Produced, bbl"]
-            except:
-                pass
-            try:
-                count_water += points[api_well_num][year]["Water Produced, bbl"]
-            except:
-                pass
-        gas.append(count_gas)
-        oil.append(count_oil)
-        water.append(count_water)
+#     for year in index:
+#         try:
+#             gas.append(points[api_well_num][year]["Gas Produced, MCF"])
+#         except:
+#             gas.append(0)
+#         try:
+#             oil.append(points[api_well_num][year]["Oil Produced, bbl"])
+#         except:
+#             oil.append(0)
+#         try:
+#             water.append(points[api_well_num][year]["Water Produced, bbl"])
+#         except:
+#             water.append(0)
 
-    return index, gas, oil, water
+#     return index, gas, oil, water
+
+
+# def produce_aggregate(selected, year_slider):
+
+#     index = list(range(max(year_slider[0], 1985), 2016))
+#     gas = []
+#     oil = []
+#     water = []
+
+#     for year in index:
+#         count_gas = 0
+#         count_oil = 0
+#         count_water = 0
+#         for api_well_num in selected:
+#             try:
+#                 count_gas += points[api_well_num][year]["Gas Produced, MCF"]
+#             except:
+#                 pass
+#             try:
+#                 count_oil += points[api_well_num][year]["Oil Produced, bbl"]
+#             except:
+#                 pass
+#             try:
+#                 count_water += points[api_well_num][year]["Water Produced, bbl"]
+#             except:
+#                 pass
+#         gas.append(count_gas)
+#         oil.append(count_oil)
+#         water.append(count_water)
+
+#     return index, gas, oil, water
 
 
 # Create callbacks
-app.clientside_callback(
-    ClientsideFunction(namespace="clientside", function_name="resize"),
-    Output("output-clientside", "children"),
-    [Input("count_graph", "figure")],
-)
+# app.clientside_callback(
+#     ClientsideFunction(namespace="clientside", function_name="resize"),
+#     Output("output-clientside", "children"),
+#     [Input("count_graph", "figure")],
+# )
 
+@app.callback(
+    Output("count_graph", "figure"),
+    [Input("date-slider_0", "value"),
+    Input("date-slider_1", "value"),
+    Input("date-slider_2", "value"),
+    Input("date-slider_3", "value")])
+
+def update_output(date_0, date_1, date_2, date_3):
+    dates = [date_0, date_1, date_2, date_3]
+    # print('Dates: {}'.format(dates))
+    dates.sort()
+    # print('DAtes: {}'.format(dates))
+    fig = generate_data.return_plot_from_dates(dates)
+    return fig
 
 # @app.callback(
 #     Output("aggregate_data", "data"),

@@ -2,6 +2,7 @@
 from datetime import datetime
 import math
 import pathlib
+import copy
 
 import plotly.graph_objects as go
 import plotly.express as px
@@ -52,12 +53,33 @@ def test_plot():
         fig.add_trace(go.Bar(x=df.index, y=df[col],
                             name=col))
 
-def return_plot():
+# def return_plot():
+#     ''' return plot from model'''
+#     # df = load_data()
+    
+#     #GEt trajectories
+#     x = template_model.simulate()
+    
+#     # prepare date_range
+#     time_start = config.date_start_simulations
+#     date_range = pd.date_range(time_start, periods = x.shape[1], freq = 'D')
+#     fig = go.Figure()
+#     for name, traj in x.iterrows():
+#         fig.add_trace(go.Bar(x=date_range, y=traj,
+#                             name=name))
+#     fig.update_layout(barmode='stack',
+#                     #   autosize= False,
+#                     #   height=500,
+#                       )
+#     return fig
+
+def return_plot_from_dates(dates):
     ''' return plot from model'''
     # df = load_data()
-    
+    params = copy.deepcopy(template_model.params)
+    params['tr'] = dates
     #GEt trajectories
-    x = template_model.simulate()
+    x = template_model.simulate(params)
     
     # prepare date_range
     time_start = config.date_start_simulations
@@ -71,6 +93,7 @@ def return_plot():
                     #   height=500,
                       )
     return fig
+
 
 # Change the bar mode
     
