@@ -12,7 +12,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 # Multi-dropdown options
-from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
+# from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
 import config
 import generate_data
 
@@ -30,10 +30,10 @@ server = app.server
 #     {"label": str(COUNTIES[county]), "value": str(county)} for county in COUNTIES
 # ]
 
-well_status_options = [
-    {"label": str(WELL_STATUSES[well_status]), "value": str(well_status)}
-    for well_status in WELL_STATUSES
-]
+# well_status_options = [
+#     {"label": str(WELL_STATUSES[well_status]), "value": str(well_status)}
+#     for well_status in WELL_STATUSES
+# ]
 
 def get_slider_marks(date_start= datetime(2020,2,1), date_end= datetime(2020,6,1), freq = 7):
     date_start = datetime(2020,2,1)
