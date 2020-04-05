@@ -19,12 +19,12 @@ class HMM(torch.nn.Module):
         # prob leaving infected
         self.mu = torch.nn.Parameter(torch.tensor(1/3.2))
         # conditional prob to icu
-        self.gamma = torch.nn.Parameter(torch.tensor(0.05))
+        self.gamma = torch.nn.Parameter(torch.tensor(0.02))
         # death rate (inverse of time in icu)
-        self.phi = torch.nn.Parameter(torch.tensor(1/7))
+        self.phi = torch.nn.Parameter(torch.tensor(0.05))
         # prob death
-        self.w = torch.nn.Parameter(torch.tensor(0.42))
-        # prob recover from ICU
+        self.w = torch.nn.Parameter(torch.tensor(0.9))
+        # prob recover from ICU conditioned on death rate
         self.xi = torch.nn.Parameter(torch.tensor(0.1))
 
         # parameter for control
@@ -44,10 +44,10 @@ class HMM(torch.nn.Module):
         self.sigma = torch.tensor(2.5)
 
         self.tc = 22
-        self.kappa = torch.nn.Parameter(torch.tensor(1),requires_grad=False)
+        self.kappa = torch.nn.Parameter(torch.tensor([1,13]),requires_grad=False)
         self.tr = 100
         self.obs = torch.tensor([[0.,0.,0.,1.,1.,1.,1.], # total case includes all recover, death, i and h
-                                 [0,0,0,0,1,0,0],
+                                 [0,0,0,0,0.25,0,0],
                                  [0,0,0,0,0,0,1]])
     
     def clamp(self):
@@ -97,7 +97,7 @@ class HMM(torch.nn.Module):
         if t < self.tc:
             k = self.k
         else:
-            ind = np.where(np.array(self.tr) > t)[0]
+            ind = np.where(np.array(self.tr) > t.detach().numpy())[0]
             if len(ind) == 0:
                 k = self.k
             else:
@@ -108,15 +108,17 @@ class HMM(torch.nn.Module):
 
     def forward(self,T):
         outputs = []
+        hidden_log = []
         for i in range(T):
             if i == 0:
                 hidden = torch.cat((self.prior.view(-1,1),torch.tensor([0.,0.,0.,1.]).view(-1,1)),0)
             else:
                 hidden = self.innovate(hidden)
             
+            hidden_log.append(hidden)
             outputs.append(torch.mm(self.obs,hidden[0:-1].view(-1,1)))
 
-        return torch.cat(outputs, 0).view(T, -1)
+        return torch.cat(outputs, 0).view(T, -1), torch.cat(hidden_log,0).view(T,-1)
                 
 
     def innovate(self,x):
@@ -182,26 +184,38 @@ class HMM(torch.nn.Module):
             #                 [0, 0, 0, self.mu*(1-self.gamma), (1-self.w)*self.xi, 1, 0],
             #                 [0, 0, 0, 0, self.w*self.phi, 0, 1]],requires_grad=True)
 
-        return torch.cat((torch.mm(trans,x[0:-1].view(-1,1)).view(-1,1),t.view(-1,1)),dim=0)
+        return torch.cat((torch.mm(trans,x[0:-1].view(-1,1)).view(-1,1),(t+1).view(-1,1)),dim=0)
 
 data = data_io.load_data().transpose()
-data = data[10:,:]
+data = data[10:,1:]
 
 model = HMM()
-optimizer = optim.Adagrad(model.parameters(),lr= 5e-4)
+model.tc = model.tc-10 # we leave 10 days unused
+optimizer = optim.Adam(model.parameters(),lr= 1e-3)
 criterion = torch.nn.MSELoss()
-scale = 0.1
+scale = torch.tensor([[1e3],[1e6]]).float()
 
-for i in range(200):
+for i in range(250):
     optimizer.zero_grad()
-    outputs = model(data.shape[0])
-    loss = criterion(outputs,torch.tensor(data).float()/model.n_eff.float())
+    outputs,states_log = model(data.shape[0])
+    # scaling the loss
+    weighted_outputs = scale*outputs[:,1:].transpose(0,1)
+    weighted_data = scale*torch.tensor(data).float().transpose(0,1)/model.n_eff.float()
+    loss = criterion(weighted_outputs.transpose(0,1),weighted_data.transpose(0,1))
     loss.backward()
     optimizer.step()
     model.clamp()
     print('iter: {}, loss: {}'.format(i,loss))
 
 
+plt.figure(1)
+plt.clf()
+plt.plot(np.arange(data.shape[0]),data[:,0]/model.n_eff.float().detach().numpy(),label='data hospitalized')
+plt.plot(np.arange(data.shape[0]),data[:,1]/model.n_eff.float().detach().numpy(),label='data death')
+plt.plot(np.arange(data.shape[0]),outputs.detach().numpy()[:,1],label='hospitalized')
+plt.plot(np.arange(data.shape[0]),outputs.detach().numpy()[:,2],label='death')
+plt.legend()
+plt.show()
 
 
 
