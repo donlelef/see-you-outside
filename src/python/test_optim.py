@@ -60,4 +60,4 @@ if __name__ == "__main__":
 
     params['x_init'] = np.array(args.x_init)
     
-    optimize(params)
+    simulate(params)
