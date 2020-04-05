@@ -1,0 +1,15 @@
+**/*.aux
+**/*.fls
+**/*.log
+**/*.synctex.gz
+**/*.xdv
+**/*.fdb_latexmk
+**/*.bbl
+**/*.bcf
+**/*.blg
+**/*.xml
+**/*.dvi
+**/*.ps
+/*.asv
+**/*.asv
+
