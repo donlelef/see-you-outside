@@ -25,6 +25,17 @@ params['s'] = 0.0001 # area of the region(guess)
 
 params['k_old'] = params['k']
 
+params['tc'] = 15
+params['tr'] = [25, 40, 55, 70]
+params['kappa'] = [1,3,5,7]
+
+def simulate(params = params, x_init = [0.9, 0.1, 0, 0, 0, 0, 0]):
+   x = pd.DataFrame(index=states)
+   x[1] = x_init
+
+   for t in range(2, params['t_max']+1):
+      x[t] = innovate(x[t-1].values, params, t)
+   return x
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
