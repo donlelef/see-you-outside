@@ -11,23 +11,6 @@ def f(x, params):
     return 2 - np.exp(-params['eps']*x)
 
 
-def infect_rate(x, params, t):
-    z = 1/(f(params['n_eff']/params['s'], params))
-    x_a = x[2]*params['n_eff']
-    x_i = x[3]*params['n_eff']
-    
-    if t < params['tc']:
-        k = params['k']
-    else:
-        ind = np.where(np.array(params['tr']) > t)[0]
-        if len(ind) == 0:
-            k = params['k']
-        else:
-            k = params['kappa'][min(ind)] * (params['sigma']-1)
-    
-    return 1 - np.power(1-params['beta_a'], z*k*f(params['n_eff']/params['s'], params)*params['C']*x_a/params['n_eff'])\
-    * np.power(1-params['beta_i'], z*k*f(params['n_eff']/params['s'], params)*params['C']*x_i/params['n_eff'])
-    
     
 def get_ch(x, params):
     return np.power((x[0] + x[4]),params['sigma'])
