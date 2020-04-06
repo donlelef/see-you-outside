@@ -86,14 +86,12 @@ for i in range(T):
     trans = calculate_trans(x[:,i], params,k[i], i)
     opti.subject_to(x[:,i+1]==trans@x[:,i])
     #opti.subject_to(loss[i+1]==loss[i]-k[i])#**2+10000*(x[3,i]+x[5,i])**2)
-    opti.subject_to(loss[i+1]==loss[i]-1e-3*k[i]**4+eps_penalty*(eps_soft[i]*eps_soft[i]))
+    opti.subject_to(loss[i+1]==loss[i]+1e-3*(params['k']-k[i])**4+eps_penalty*(eps_soft[i]*eps_soft[i]))
 
     # control constraints
     opti.subject_to(k[i]<=params['k'])
     opti.subject_to(k[i]>=1)
     opti.subject_to(eps_soft[i]>=0)
-    # if i>=2:
-    #     opti.subject_to(k[i]>=k[i-1])
 
     opti.subject_to(eps_soft[i]<=0.1) # reasonable upper bound on available beds
     #opti.subject_to(x[4,i]<=0.01)
