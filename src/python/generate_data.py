@@ -33,14 +33,15 @@ def generate_data_from_model(I, hospital_beds, icus_penalty, lockdown_penalty):
     lockdown_penalty /= 100
     icus_penalty /= 1000
     hospital_beds /= 10000
-    data_set, lockdown, params = opt.opt_strategy(weight_eps=icus_penalty, bed_ratio=hospital_beds, weight_goout=lockdown_penalty, initial_infect=I)
+    data_set, lockdown, params = opt.opt_strategy(weight_eps=icus_penalty, bed_ratio=hospital_beds,
+                                                  weight_goout=lockdown_penalty, initial_infect=I)
 
     data = pd.DataFrame(data_set, index=['S', 'E', 'A', 'I', 'H', 'D', 'R']).transpose()
     data['beds'] = hospital_beds
-    data['lockdown'] = np.append(0,(-1)/12.3*lockdown + 13.3/12.3)
-    data['day'] = np.arange(len(lockdown)+1)
+    data['lockdown'] = np.append(0, (-1) / 12.3 * lockdown + 13.3 / 12.3)
+    data['day'] = np.arange(len(lockdown) + 1)
 
-    return data.iloc[:81,:]
+    return data.iloc[:81, :]
 
 
 def get_sir_plot(data_set: pd.DataFrame):
@@ -69,6 +70,9 @@ def get_sir_plot(data_set: pd.DataFrame):
     ))
     fig.update_layout(
         showlegend=True,
+        title="Infection curve",
+        xaxis_title="day",
+        yaxis_title="% of population",
         template=DEFAULT_THEME,
         yaxis=dict(
             type='linear',
@@ -98,6 +102,9 @@ def get_hospital_plot(data_set: pd.DataFrame):
         name='Hospital beds',
         line={'dash': 'dot', 'color': '#000000'}))
     fig.update_layout(
+        title="Hospitalized and dead people",
+        xaxis_title="day",
+        yaxis_title="% of population",
         showlegend=True,
         template=DEFAULT_THEME,
         yaxis=dict(
@@ -145,6 +152,9 @@ def get_lockdown_plot(data_set: pd.DataFrame):
         y=data_set.lockdown * 100,
         marker_color=LOCKDOWN_COLOR))
     fig.update_layout(
+        title="Population in lockdown",
+        xaxis_title="day",
+        yaxis_title="% of population",
         showlegend=False,
         template=DEFAULT_THEME,
         yaxis=dict(
@@ -152,9 +162,6 @@ def get_lockdown_plot(data_set: pd.DataFrame):
             range=[0, 100],
             ticksuffix='%'))
     return fig
-
-
-
 
 
 """
