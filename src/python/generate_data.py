@@ -18,6 +18,7 @@ LOCKDOWN_COLOR = '#dbdbdb'
 LOCKDOWN_TH = 0.01
 DEFAULT_THEME = 'simple_white'
 
+
 def generate_data_from_scenario():
     scenario_path = os.path.join(config.PATH, 'app_data', 'scenario', 'two_lockdowns.csv')
     data_set = pd.read_csv(scenario_path)
@@ -31,13 +32,14 @@ def generate_data_from_model(hospital_beds, icus_penalty, lockdown_penalty):
     lockdown_penalty /= 100
     icus_penalty /= 100
     hospital_beds /= 1000
-    data_set, lockdown, params = opt.opt_strategy(weight_eps=icus_penalty, bed_ratio=hospital_beds, weight_goout=lockdown_penalty)
-    
+    data_set, lockdown, params = opt.opt_strategy(weight_eps=icus_penalty, bed_ratio=hospital_beds,
+                                                  weight_goout=lockdown_penalty)
+
     data = pd.DataFrame(data_set, index=['S', 'E', 'A', 'I', 'H', 'D', 'R']).transpose()
     data['beds'] = hospital_beds
-    data['lockdown'] = np.append(0,(-1)/12.3*lockdown + 13.3/12.3) #np.append((lockdown-1)/(params['k']-1),0)
-    data['day'] = np.arange(len(lockdown)+1)
-    
+    data['lockdown'] = np.append(0, (-1) / 12.3 * lockdown + 13.3 / 12.3)  # np.append((lockdown-1)/(params['k']-1),0)
+    data['day'] = np.arange(len(lockdown) + 1)
+
     return data
 
 
@@ -66,6 +68,9 @@ def get_sir_plot(data_set: pd.DataFrame):
         name='recovered'
     ))
     fig.update_layout(
+        title="Infection curve",
+        xaxis_title="days",
+        yaxis_title="% of population",
         showlegend=True,
         template=DEFAULT_THEME,
         yaxis=dict(
@@ -96,6 +101,9 @@ def get_hospital_plot(data_set: pd.DataFrame):
         name='hospital beds',
         line={'dash': 'dot', 'color': '#000000'}))
     fig.update_layout(
+        title="Hospitalized and dead people",
+        xaxis_title="days",
+        yaxis_title="% of population",
         showlegend=True,
         template=DEFAULT_THEME,
         yaxis=dict(
@@ -143,6 +151,9 @@ def get_lockdown_plot(data_set: pd.DataFrame):
         y=data_set.lockdown * 100,
         marker_color=LOCKDOWN_COLOR))
     fig.update_layout(
+        title="Population in lockdown",
+        xaxis_title="days",
+        yaxis_title="% of population",
         showlegend=False,
         template=DEFAULT_THEME,
         yaxis=dict(
