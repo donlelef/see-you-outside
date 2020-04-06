@@ -52,22 +52,26 @@ params['mobility'] = 0 # only one region
 params['eta'] = 1/2.34 # from exposed to asymptomatic
 params['alpha'] = 1/2.86 # from asymptomatic to infected
 params['mu'] = 1/3.2 # prob leaving infected
-params['gamma'] = 0.05 # conditional prob to icu
+params['gamma'] = 0.13 # conditional prob to icu
 params['phi'] = 1/7.0 # death rate (inverse of time in icu)
-params['w'] = 0.42 # prob death
+params['w'] = 0.2 # prob death
 params['xi'] = 0.1 # prob recover from ICU
 
 
-params['beta_a'] = 0.06 # infectivity of asymptomatic
-params['beta_i'] = 0.06 # infectivity of infected
+params['beta_a'] = 0.07 # infectivity of asymptomatic
+params['beta_i'] = 0.07 # infectivity of infected
 params['k'] = 13.3 # average number of contact
 params['C'] = 0.721 # contact rate
 params['eps'] = 0.01 # density factor
 params['sigma']= 2.5 # household size
-params['n_eff'] = 10000 # effecitve population
-params['s'] = 0.0001 # area of the region(guess)
+params['n_eff'] = 8570000 # effecitve population
+params['s'] = 39133 # area of the region
 
-eps_penalty = 1e3 # penalty parameter for soft constraints
+eps_penalty = 1e5 # penalty parameter for soft constraints,upper bound 1e5
+lockdown_penalty =  8e-2 # upper bound 8e-2 
+death_penalty = 5e3   # upper bound 5e3
+bed_per_person = 1e-3 # upper bound 5e-2
+final_infect_penalty = 5e6
 opti = cs.Opti()
 
 T = 100 # horizon
@@ -76,7 +80,6 @@ k = opti.variable(1,T)
 eps_soft = opti.variable(1,T)
 loss = opti.variable(1,T+1)
 x_init = opti.parameter(7,1)
-num_habitant = 8570000
 
 # boundery condition
 opti.subject_to(loss[1]==0)
@@ -86,7 +89,7 @@ for i in range(T):
     trans = calculate_trans(x[:,i], params,k[i], i)
     opti.subject_to(x[:,i+1]==trans@x[:,i])
     #opti.subject_to(loss[i+1]==loss[i]-k[i])#**2+10000*(x[3,i]+x[5,i])**2)
-    opti.subject_to(loss[i+1]==loss[i]+1e-3*(params['k']-k[i])**4+eps_penalty*(eps_soft[i]*eps_soft[i]))
+    opti.subject_to(loss[i+1]==loss[i]+lockdown_penalty*(params['k']-k[i])**2+eps_penalty*(eps_soft[i]))
 
     # control constraints
     opti.subject_to(k[i]<=params['k'])
@@ -95,7 +98,7 @@ for i in range(T):
 
     opti.subject_to(eps_soft[i]<=0.1) # reasonable upper bound on available beds
     #opti.subject_to(x[4,i]<=0.01)
-    opti.subject_to(x[4,i]<=0.001 + eps_soft[i])
+    opti.subject_to(x[4,i]<=bed_per_person + eps_soft[i])
 
     # initialization of value
     opti.set_initial(eps_soft[i],0.1)
@@ -105,7 +108,7 @@ for i in range(T):
 opti.subject_to(x[:,0]==x_init)
 opti.subject_to(k[0]==1)
 
-opti.minimize(loss[-1]+100*x[6,T]*x[6,T])
+opti.minimize(loss[-1]+death_penalty*x[6,T]*x[6,T]+final_infect_penalty*x[4,T]*x[4,T])
 p_opts = {"expand":True}
 s_opts = {"max_iter": 1e4}
 opti.solver('ipopt',p_opts,s_opts)
@@ -113,13 +116,13 @@ opti.solver('ipopt',p_opts,s_opts)
 
 # initial state
 temp = cs.DM(7,1)
-temp[0] = 0.8
-temp[1] = 0.1
-temp[2] = 0.1
-temp[3] = 0.0
-temp[4] = 0.0
-temp[5] = 0.0
-temp[6] = 0.0
+temp[0] = 0.8   # s
+temp[1] = 0.1   # e
+temp[2] = 0.08  # a
+temp[3] = 0.0189 # i
+temp[4] = 0.0011 # h
+temp[5] = 0.0   # r
+temp[6] = 0.0   # d
 opti.set_value(x_init,temp)
 
 sol = opti.solve()
@@ -129,6 +132,10 @@ plt.clf()
 plt.plot(sol.value(k))
 
 plt.figure(2)
+plt.clf()
+plt.plot(sol.value(eps_soft))
+
+plt.figure(3)
 plt.clf()
 plt.plot(sol.value(x)[3,:],label='infected')
 plt.plot(sol.value(x)[4,:],label='hospitalized')
