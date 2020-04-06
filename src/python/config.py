@@ -13,3 +13,5 @@ date_start_simulations = datetime(2020,3,15)
 
 states_label_short = ['S', 'E', 'A', 'I', 'H', 'D', 'R']
 states_label = ['Susceptible', 'Exposed', 'Asymptomatic', 'I', 'H', 'Dead', 'Recovered']
+
+

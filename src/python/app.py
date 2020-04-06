@@ -66,29 +66,29 @@ app.layout = html.Div(
                     html.P("How many ICUs per 1000 inhabitants?"),
                     dcc.Slider(
                         id='hospital-beds',
-                        min=0.1,
-                        max=10,
-                        step=0.1,
-                        value=1,
-                        marks={v: str(v) for v in range(1, 11, 2)}
+                        min=5,
+                        max=50,
+                        step=5,
+                        value=5,
+                        marks={v: str(v) for v in range(5, 51, 5)}
                     ),
                     html.P("How bad is lockdown - the higher, the worse?"),
                     dcc.Slider(
                         id='lockdown-penalty',
-                        min=10,
-                        max=1000,
+                        min=0,
+                        max=100,
                         step=10,
-                        value=100,
-                        marks={v: str(v) for v in range(100, 1001, 200)}
+                        value=10,
+                        marks={v: str(v) for v in range(0, 101, 10)}
                     ),
                     html.P("How bad is filling ICUs?"),
                     dcc.Slider(
                         id='icus-penalty',
-                        min=100,
-                        max=10000,
+                        min=0,
+                        max=100,
                         step=10,
-                        value=1000,
-                        marks={v: str(v) for v in range(1000, 10001, 2000)}
+                        value=10,
+                        marks={v: str(v) for v in range(0, 101, 10)}
                     ),
                     html.Button('Run!', id='run')],
                     className="pretty_container four columns",
