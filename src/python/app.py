@@ -99,10 +99,12 @@ app.layout = html.Div(
                         dcc.Graph(
                             id='sir-chart',
                             config=default_config,
-                            responsive=True
+                            responsive=True,
+                            style={'height': '360px'}
                         ))],
                     className="pretty_container eight columns",
-                    id="sir-chart-div"
+                    id="sir-chart-div",
+                    style={'height': '400px'}
                 )
             ]),
         html.Div(
@@ -113,20 +115,24 @@ app.layout = html.Div(
                         dcc.Graph(
                             id='hospital-chart',
                             config=default_config,
-                            responsive=True
+                            responsive=True,
+                            style={'height': '360px'}
                         ))],
-                    className="pretty_container one-half column",
-                    id="hospital-chart-div"
+                    className="pretty_container six columns",
+                    id="hospital-chart-div",
+                    style={'height': '400px'}
                 ),
                 html.Div([
                     dcc.Loading(
                         dcc.Graph(
                             id='lockdown-chart',
                             config=default_config,
-                            responsive=True
+                            responsive=True,
+                            style={'height': '360px'}
                         ))],
-                    className="pretty_container one-half column",
-                    id="lockdown-chart-div"
+                    className="pretty_container six columns",
+                    id="lockdown-chart-div",
+                    style={'height': '400px'}
                 )
             ])
     ])
