@@ -1,9 +1,9 @@
 import os
 import time
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import numpy as np
 
 import config
 import opt_helpers as opt
@@ -13,8 +13,9 @@ INFECTED_COLOR = '#fa7a2a'
 HOSPITALIZED_COLOR = '#bab400'
 RECOVERED_COLOR = '#009e45'
 DEAD_COLOR = '#9e00ba'
-LOCKDOWN_COLOR = '#a6a6a6'
+LOCKDOWN_COLOR = '#dbdbdb'
 
+LOCKDOWN_TH = 0.01
 DEFAULT_THEME = 'simple_white'
 
 def generate_data_from_scenario():
@@ -101,6 +102,37 @@ def get_hospital_plot(data_set: pd.DataFrame):
             type='linear',
             range=[0, max(data_set.H.max(), data_set.D.max()) * 110],
             ticksuffix='%'))
+
+    data_set['lockdown_prev'] = data_set.lockdown.shift(1)
+    data_set['lockdown_start'] = (data_set.lockdown > LOCKDOWN_TH) & (data_set.lockdown_prev < LOCKDOWN_TH)
+    data_set['lockdown_end'] = (data_set.lockdown < LOCKDOWN_TH) & (data_set.lockdown_prev > LOCKDOWN_TH)
+
+    starts = list(data_set[data_set.lockdown_start == 1].day)
+    ends = list(data_set[data_set.lockdown_end == 1].day)
+
+    if len(starts) < len(ends):
+        starts.insert(0, 1)
+
+    if len(ends) < len(starts):
+        ends.append(data_set.day.max())
+
+    # Add shape regions
+    fig.update_layout(
+        shapes=[
+            dict(
+                type="rect",
+                xref="x",
+                yref="paper",
+                x0=s,
+                y0=0,
+                x1=e,
+                y1=1,
+                fillcolor=LOCKDOWN_COLOR,
+                opacity=0.5,
+                layer="below",
+                line_width=0,
+            ) for s, e in zip(starts, ends)]
+    )
     return fig
 
 
