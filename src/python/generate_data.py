@@ -1,105 +1,110 @@
-''' Here all data generation takes place'''
-import copy
 import os
-from datetime import datetime
+import time
 
-import numpy as np
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 
 import config
-import template_model
+
+SUSCEPTIBLE_COLOR = '#0099d1'
+INFECTED_COLOR = '#fa7a2a'
+HOSPITALIZED_COLOR = '#bab400'
+RECOVERED_COLOR = '#009e45'
+DEAD_COLOR = '#9e00ba'
+LOCKDOWN_COLOR = '#a6a6a6'
+
+DEFAULT_THEME = 'simple_white'
 
 
-def generate_fake_data():
-    n_days = 100
-    day_start = datetime(2020, 2, 1)
-
-    date_range = pd.date_range(day_start, periods=n_days, freq='1D')
-    x = np.arange(n_days)
-    sigma_square = 50
-    data = dict()
-    data['infected'] = np.exp(-(x - 50) ** 2 / 2 / sigma_square) / 2
-    delay = 15
-    data['recovered'] = 0.8 * np.concatenate([np.zeros(delay), data['infected'][:-delay]])
-    data['dead'] = 0.2 * np.concatenate([np.zeros(delay), data['infected'][:-delay]])
-    data['unaffected'] = 1 - data['infected'] - data['dead'] - data['recovered']
-    df = pd.DataFrame(data, index=date_range)
-    return df
-
-
-def load_data():
-    # df = pd.read_csv('data_generated/data.txt').transpose()
-    df = pd.read_csv(config.DATA_PATH / 'data.txt').transpose()
-    n_days = df.shape[0]
-    day_start = datetime(2020, 2, 1)
-    date_range = pd.date_range(day_start, periods=n_days, freq='1D')
-    df.index = date_range
-    return df
-
-
-def test_plot():
-    # df = generate_fake_data()
-    df = load_data()
-    fig = go.Figure()
-    for col in df.columns:
-        fig.add_trace(go.Scatter(x=df.index, y=df[col],
-                                 name=col))
-    fig.show()
-
-    fig = go.Figure()
-    for col in df.columns:
-        fig.add_trace(go.Bar(x=df.index, y=df[col],
-                             name=col))
-
-
-# def return_plot():
-#     ''' return plot from model'''
-#     # df = load_data()
-
-#     #GEt trajectories
-#     x = template_model.simulate()
-
-#     # prepare date_range
-#     time_start = config.date_start_simulations
-#     date_range = pd.date_range(time_start, periods = x.shape[1], freq = 'D')
-#     fig = go.Figure()
-#     for name, traj in x.iterrows():
-#         fig.add_trace(go.Bar(x=date_range, y=traj,
-#                             name=name))
-#     fig.update_layout(barmode='stack',
-#                     #   autosize= False,
-#                     #   height=500,
-#                       )
-#     return fig
-
-def return_plot_from_dates(dates):
-    ''' return plot from model'''
-    # df = load_data()
-    params = copy.deepcopy(template_model.params)
-    params['tr'] = dates
-    # GEt trajectories
-    x = template_model.simulate(params)
-
-    # prepare date_range
-    time_start = config.date_start_simulations
-    date_range = pd.date_range(time_start, periods=x.shape[1], freq='D')
-    fig = go.Figure()
-    for name, traj in x.iterrows():
-        fig.add_trace(go.Bar(x=date_range, y=traj,
-                             name=name))
-    fig.update_layout(barmode='stack',
-                      #   autosize= False,
-                      #   height=500,
-                      )
-    return fig
-
-
-def get_scenario_plot(scenario_file='no_lockdown.csv'):
-    scenario_path = os.path.join(config.PATH, 'app_data', 'scenario', scenario_file)
+def generate_data_from_scenario():
+    scenario_path = os.path.join(config.PATH, 'app_data', 'scenario', 'two_lockdowns.csv')
     data_set = pd.read_csv(scenario_path)
-    fig = px.area(data_set, x='day', y='people', color='category')
+    return data_set
 
+
+def generate_data_from_model(hospital_beds, icus_penalty, lockdown_penalty):
+    print(f"You are calling the model with {hospital_beds} beds, {icus_penalty} "
+          f"icu penalty and {lockdown_penalty} lockdown penalty")
+    time.sleep(2)
+    data_set = generate_data_from_scenario()  # TODO: replace with actual optimization!
+    return data_set
+
+
+def get_sir_plot(data_set: pd.DataFrame):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=data_set.day, y=(data_set.S + data_set.E + data_set.C) * 100,
+        mode='lines',
+        line=dict(width=0.5, color=SUSCEPTIBLE_COLOR),
+        stackgroup='one',
+        name='susceptible'
+    ))
+    fig.add_trace(go.Scatter(
+        x=data_set.day, y=(data_set.I + data_set.A + data_set.H) * 100,
+        mode='lines',
+        line=dict(width=0.5, color=INFECTED_COLOR),
+        stackgroup='one',
+        name='infected'
+    ))
+    fig.add_trace(go.Scatter(
+        x=data_set.day, y=(data_set.R + data_set.D) * 100,
+        hoverinfo='x+y',
+        mode='lines',
+        line=dict(width=0.5, color=RECOVERED_COLOR),
+        stackgroup='one',
+        name='recovered'
+    ))
+    fig.update_layout(
+        showlegend=True,
+        template=DEFAULT_THEME,
+        yaxis=dict(
+            type='linear',
+            range=[0, 100],
+            ticksuffix='%'))
     return fig
 
+
+def get_hospital_plot(data_set: pd.DataFrame):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=data_set.day,
+        y=data_set.H * 100,
+        mode='lines',
+        name='hospitalized',
+        line={'color': HOSPITALIZED_COLOR}))
+    fig.add_trace(go.Scatter(
+        x=data_set.day,
+        y=data_set.D * 100,
+        mode='lines',
+        name='dead',
+        line={'color': DEAD_COLOR}))
+    fig.add_trace(go.Scatter(
+        x=data_set.day,
+        y=data_set.beds * 100,
+        mode='lines',
+        name='hospital beds',
+        line={'dash': 'dot', 'color': '#000000'}))
+    fig.update_layout(
+        showlegend=True,
+        template=DEFAULT_THEME,
+        yaxis=dict(
+            type='linear',
+            range=[0, max(data_set.H.max(), data_set.D.max()) * 110],
+            ticksuffix='%'))
+    return fig
+
+
+def get_lockdown_plot(data_set: pd.DataFrame):
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=data_set.day,
+        y=data_set.lockdown * 100,
+        marker_color=LOCKDOWN_COLOR))
+    fig.update_layout(
+        showlegend=False,
+        template=DEFAULT_THEME,
+        yaxis=dict(
+            type='linear',
+            range=[0, 100],
+            ticksuffix='%'))
+    return fig

@@ -1,3 +1,8 @@
+.responsive-img {
+  max-width: 60%;
+  height: auto;
+}
+
 .js-plotly-plot .plotly .modebar {
   padding-top: 5%;
   margin-right: 3.5%;
@@ -5,7 +10,7 @@
 
 body {
   background-color: #f2f2f2;
-  margin: 5%;
+  margin: 3%;
 }
 
 .two.columns {
@@ -38,11 +43,9 @@ body {
 }
 
 .control_label {
-  margin: 0;
-  padding: 10px;
-  padding-bottom: 0px;
-  margin-bottom: 0px;
-  width: calc(100%-40px);
+  padding: 10px 10px 0px;
+  margin: 0 0 0px;
+  width: calc(100% - 40px);
 }
 
 .rc-slider {
@@ -87,7 +90,6 @@ body {
   font-size: 15px;
   float: right;
   margin-right: 10px;
-  margin-top: 30px;
 }
 #title {
   text-align: center;
