@@ -47,7 +47,7 @@ def calculate_trans(x, params,k, t):
     return trans
 
 
-def opt_strategy (weight_eps, bed_ratio,weight_goout,initial_state = [0.8,0.2,0]):
+def opt_strategy (weight_eps, bed_ratio,weight_goout,initial_infect = 0.2):
     # args:
     #   weight_eps: weights on overloading hospital: [0,1]
     #   bed_ratio: bed per person
@@ -122,12 +122,12 @@ def opt_strategy (weight_eps, bed_ratio,weight_goout,initial_state = [0.8,0.2,0]
 
     # initial state
     temp = cs.DM(7,1)
-    temp[0] = initial_state[0]   # s
-    temp[1] = 0.5*initial_state[1]   # e
-    temp[2] = 0.4*initial_state[1]  # a
-    temp[3] = 0.09*initial_state[1] # i
-    temp[4] = 0.01*initial_state[1] # h
-    temp[5] = initial_state[2]   # r
+    temp[0] = 1-initial_infect  # s
+    temp[1] = 0.5*initial_infect    # e
+    temp[2] = 0.4*initial_infect   # a
+    temp[3] = 0.09*initial_infect  # i
+    temp[4] = 0.01*initial_infect  # h
+    temp[5] = 0.0   # r
     temp[6] = 0.0   # d
     opti.set_value(x_init,temp)
 
