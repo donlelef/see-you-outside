@@ -6,7 +6,7 @@ def f(x, params):
 
 
 def infect_rate(x, k,params):
-    z = 1/(f(params['n_eff']/params['s'], params))
+    # z = 1/(f(params['n_eff']/params['s'], params))
     x_a = x[2]
     x_i = x[3]
 
@@ -87,10 +87,10 @@ for i in range(T):
     # control constraints
     opti.subject_to(k[i]<=params['k'])
     opti.subject_to(k[i]>=1)
-    opti.subject_to(x[5,i]<=0.01)
+    opti.subject_to(x[4,i]<=0.01)
 opti.subject_to(x[:,0]==x_init)
 
-opti.minimize(loss[-1]+20*x[6,30])
+opti.minimize(loss[-1]+1000*x[6,100])
 p_opts = {"expand":True}
 s_opts = {"max_iter": 1e4}
 opti.solver('ipopt',p_opts,s_opts)

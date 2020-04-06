@@ -67,7 +67,7 @@ params['sigma']= 2.5 # household size
 params['n_eff'] = 10000 # effecitve population
 params['s'] = 0.0001 # area of the region(guess)
 
-eps_penalty = 1 # penalty parameter for soft constraints
+eps_penalty = 1e3 # penalty parameter for soft constraints
 opti = cs.Opti()
 
 T = 100 # horizon
@@ -86,17 +86,28 @@ for i in range(T):
     trans = calculate_trans(x[:,i], params,k[i], i)
     opti.subject_to(x[:,i+1]==trans@x[:,i])
     #opti.subject_to(loss[i+1]==loss[i]-k[i])#**2+10000*(x[3,i]+x[5,i])**2)
-    opti.subject_to(loss[i+1]==loss[i]-k[i]+eps_penalty*(eps_soft[i])**2 )#**2+10000*(x[3,i]+x[5,i])**2)
+    opti.subject_to(loss[i+1]==loss[i]-1e-3*k[i]**4+eps_penalty*(eps_soft[i]*eps_soft[i]))
 
     # control constraints
     opti.subject_to(k[i]<=params['k'])
     opti.subject_to(k[i]>=1)
     opti.subject_to(eps_soft[i]>=0)
-    #opti.subject_to(x[4,i]<=0.01)
-    opti.subject_to(x[4,i]<=0.01 + eps_soft[i])
-opti.subject_to(x[:,0]==x_init)
+    # if i>=2:
+    #     opti.subject_to(k[i]>=k[i-1])
 
-opti.minimize(loss[-1])#+10000*x[3,-1]**2)
+    opti.subject_to(eps_soft[i]<=0.1) # reasonable upper bound on available beds
+    #opti.subject_to(x[4,i]<=0.01)
+    opti.subject_to(x[4,i]<=0.001 + eps_soft[i])
+
+    # initialization of value
+    opti.set_initial(eps_soft[i],0.1)
+    opti.set_initial(k[i],1)
+
+# boundary conditions
+opti.subject_to(x[:,0]==x_init)
+opti.subject_to(k[0]==1)
+
+opti.minimize(loss[-1]+100*x[6,T]*x[6,T])
 p_opts = {"expand":True}
 s_opts = {"max_iter": 1e4}
 opti.solver('ipopt',p_opts,s_opts)
@@ -104,9 +115,9 @@ opti.solver('ipopt',p_opts,s_opts)
 
 # initial state
 temp = cs.DM(7,1)
-temp[0] = 0.95
-temp[1] = 0.05
-temp[2] = 0.0
+temp[0] = 0.8
+temp[1] = 0.1
+temp[2] = 0.1
 temp[3] = 0.0
 temp[4] = 0.0
 temp[5] = 0.0
@@ -115,10 +126,16 @@ opti.set_value(x_init,temp)
 
 sol = opti.solve()
 
+plt.figure(1) 
+plt.clf()
 plt.plot(sol.value(k))
-plt.show()
 
-plt.plot(sol.value(x)[3,:])
+plt.figure(2)
+plt.clf()
+plt.plot(sol.value(x)[3,:],label='infected')
+plt.plot(sol.value(x)[4,:],label='hospitalized')
+plt.plot(sol.value(x)[5,:],label='death')
+plt.legend()
 plt.show()
 
 #pd.DataFrame(sol.value(x), index=['S','E','A','I','H','D','R']).to_csv('For_Emanuele.csv')
