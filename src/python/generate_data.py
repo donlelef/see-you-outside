@@ -1,5 +1,7 @@
 import os
 import time
+import logging
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -24,6 +26,49 @@ def generate_data_from_scenario():
     data_set = pd.read_csv(scenario_path)
     return data_set
 
+def precompute_solution(*iterables, path_pickle = 'app_data/solutions.pkl', reset = False):
+    ''' gets iterables and computes solutions'''
+    if reset:
+        dict_solutions = {}
+    else:
+        import pathlib
+        if pathlib.Path(path_pickle).is_file():
+            with open(path_pickle,'rb') as f:
+                dict_solutions = pickle.load(f)
+        else:
+            dict_solutions = {}
+    i=0
+    import itertools
+    for param_combination in itertools.product(*iterables):
+        if param_combination in dict_solutions:
+            continue
+        
+        I, hospital_beds, icus_penalty, lockdown_penalty = param_combination
+        print(f"You are calling the model with {hospital_beds} beds, {icus_penalty} "
+          f"icu penalty and {lockdown_penalty} lockdown penalty")
+        I /= 100
+        lockdown_penalty /= 100
+        icus_penalty /= 1000
+        hospital_beds /= 10000
+        
+        try:
+            data_set, lockdown, params = opt.opt_strategy(weight_eps=icus_penalty, bed_ratio=hospital_beds,
+                                                    weight_goout=lockdown_penalty, initial_infect=I)
+            data = pd.DataFrame(data_set, index=['S', 'E', 'A', 'I', 'H', 'D', 'R']).transpose()
+            data['beds'] = hospital_beds
+            data['lockdown'] = np.append(0, (-1) / 12.3 * lockdown + 13.3 / 12.3)
+            data['day'] = np.arange(len(lockdown) + 1)
+            dict_solutions[param_combination] = data
+        except:
+            logging.exception('No solution found with {}'.format(param_combination))
+            
+        
+        if i % 100 == 0:
+            with open(path_pickle,'wb') as f:
+                pickle.dump(dict_solutions, f)
+        i+=1
+
+
 
 def generate_data_from_model(I, hospital_beds, icus_penalty, lockdown_penalty):
     print(f"You are calling the model with {hospital_beds} beds, {icus_penalty} "
@@ -33,6 +78,7 @@ def generate_data_from_model(I, hospital_beds, icus_penalty, lockdown_penalty):
     lockdown_penalty /= 100
     icus_penalty /= 1000
     hospital_beds /= 10000
+    print('parameters: {},{},{},{}'.format(I, hospital_beds, icus_penalty, lockdown_penalty))
     data_set, lockdown, params = opt.opt_strategy(weight_eps=icus_penalty, bed_ratio=hospital_beds,
                                                   weight_goout=lockdown_penalty, initial_infect=I)
 
@@ -329,3 +375,5 @@ def get_lockdown_plot(data_set: pd.DataFrame):
     return fig
 
 """
+if __name__ == "__main__":
+    precompute_solution([5, 10], [5, 10], [10, 20], [10, 20])
