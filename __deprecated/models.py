@@ -1,14 +1,15 @@
 """implement models in:
 A mathematical model for the spatiotemporal epidemic spreading of COVID19
 """
+import data_io
+import numpy as np
 import pyro
 import pyro.distributions as dist
-import numpy as np
-from pyro import poutine
-from pyro.infer import SVI,TraceTMC_ELBO,TraceEnum_ELBO,JitTraceEnum_ELBO
 import torch
+from pyro import poutine
+from pyro.infer import TraceTMC_ELBO
 from torch.distributions import constraints
-import data_io
+
 
 def model_swiss(data, include_prior=True):
     assert not torch._C._get_tracing_state()

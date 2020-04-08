@@ -1,11 +1,9 @@
-# Import required libraries
-
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, ClientsideFunction, State
 
-import generate_data
+from opt import generate_data
 
 app = dash.Dash(
     __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}]
@@ -179,4 +177,4 @@ app.clientside_callback(
 
 # Main
 if __name__ == "__main__":
-    app.run_server(host='0.0.0.0', port=8080, debug=True)
+    app.run_server(debug=True)

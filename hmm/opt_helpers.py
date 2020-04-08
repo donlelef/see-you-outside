@@ -1,6 +1,5 @@
 import casadi as cs
-import pandas as pd
-import matplotlib.pyplot as plt
+
 
 def f(x, params):
     return 2 - cs.exp(-params['eps']*x)
